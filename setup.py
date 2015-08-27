@@ -16,6 +16,7 @@ setup(
     keywords = ('api frome work', 'chiffon'),
     description = 'The API Framework For THack',
     author = 'Mr.Eleven',
-    packages = [ '.', 'chiffon'], 
+    packages = [ '.', 'chiffon'],
+    zip_safe=False
     )
 

@@ -85,7 +85,8 @@ class CFRequestHandler(tornado.web.RequestHandler):
 
     def post(self, args=None):
         """http中的post方法"""
-        raise NotImplementedError()
+        params = self.get_params()
+        self.executer(**params)
 
     def get_params(self):
         """获取请求参数"""
