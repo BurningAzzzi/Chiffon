@@ -11,6 +11,9 @@ import tornado.web
 import os, logging
 from chiffon.CFUOM import CFUOM
 
+import sys
+sys.path.insert(0, "../")
+
 from tornado.options import define, options
 define("port", default=8888, help="run on the given port", type=int)
 
