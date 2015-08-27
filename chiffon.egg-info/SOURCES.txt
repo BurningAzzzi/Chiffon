@@ -1,8 +1,0 @@
-setup.py
-version.py
-chiffon/CFUOM.py
-chiffon/__init__.py
-chiffon.egg-info/PKG-INFO
-chiffon.egg-info/SOURCES.txt
-chiffon.egg-info/dependency_links.txt
-chiffon.egg-info/top_level.txt
