@@ -6,6 +6,14 @@
 
 from datetime import datetime
 
+class CFDBTable(object):
+    """表模式"""
+    def __init__(self, table_name, primary_key, field_list):
+        self.table_name = table_name
+        self.primary_key = primary_key
+        self.field_list = field_list
+        for field_name, field_info in self.field_list.items():
+            setattr(self, field_name, field_info)
 
 class CFDBObject(object):
     """所有模型的基类"""
@@ -14,7 +22,15 @@ class CFDBObject(object):
     @classmethod
     def table(cls):
         """获取表模式"""
-        pass
+        if not hasattr(cls, "table_instance"):
+            field_map = {}
+            for key in dir(CFDBObject):
+                if key.starswith("_"):
+                    continue
+                if isinstance(getattr(cls, key), Field):
+                    field_map[key] = getattr(cls, key)
+            cls.table_instance = CFDBTable(cls._table_, cls.primary_key, field_map)
+        return cls.table_instance
 
     @classmethod
     def load(cls, data_list):
@@ -96,4 +112,5 @@ class CFCondition(object):
             return self.op % (lsql, rsql)
         else:
             return self.op % (self.lvalue.field_name, self.lvalue.gen_rvalue(self.rvalue))
+
 
