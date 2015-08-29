@@ -5,6 +5,21 @@
 # Email : yumi@meishixing.com
 
 from datetime import datetime
+import MySQLdb
+import logging
+
+conn = None
+cursor = None
+
+def conn_mysql(**kwargs):
+    global conn, cursor
+    conn = MySQLdb.connect(**kwargs)
+    cursor = conn.cursor()
+    return conn
+
+def execute(sql):
+    logging.info(sql)
+    return cursor.execute(sql)
 
 class CFDBTable(object):
     """表模式"""
@@ -12,20 +27,19 @@ class CFDBTable(object):
         self.table_name = table_name
         self.primary_key = primary_key
         self.field_list = field_list
+        self.field_name_list = field_list.keys()
         for field_name, field_info in self.field_list.items():
             setattr(self, field_name, field_info)
 
 class CFDBObject(object):
     """所有模型的基类"""
-    fields = []
-
     @classmethod
     def table(cls):
         """获取表模式"""
         if not hasattr(cls, "table_instance"):
             field_map = {}
-            for key in dir(CFDBObject):
-                if key.starswith("_"):
+            for key in dir(cls):
+                if key.startswith("_"):
                     continue
                 if isinstance(getattr(cls, key), Field):
                     field_map[key] = getattr(cls, key)
@@ -52,6 +66,26 @@ class CFDBObject(object):
             if isinstance(model_dict[field], datetime):
                 model_dict[field] = model_dict[field].strftime("%Y-%m-%d %H:%M:%S")
         return model_dict
+
+
+    @classmethod
+    def object(cls):
+        return cls()
+
+    def find_one(self, cond):
+        table = self.table()
+        field_name_list = table.field_name_list
+        sql_field_list = ", ".join(field_name_list)
+        sql = "select %s from %s where %s;"
+        sql = sql % (sql_field_list, self._table_, cond.sql())
+        n = execute(sql)
+        if not n:
+            return n
+        data = cursor.fetchall()[0]
+        for i, attr in enumerate(field_name_list):
+            setattr(self, attr, data[i])
+        return n
+
         
 
 class Field(object):
@@ -76,6 +110,14 @@ class Field(object):
         """x != y"""
         return CFCondition(Field._ne, self, rvalue)
 
+    def __lt__(self, rvalue):
+        """x < y"""
+        return CFCondition(Field._lt, self, rvalue)
+
+    def __gt__(self, rvalue):
+        """x > y"""
+        return CFCondition(Field._gt, self, rvalue)
+
     def __le__(self, rvalue):
         """ x <= y """
         return CFCondition(Field._le, self, rvalue)
@@ -87,7 +129,7 @@ class Field(object):
     def gen_rvalue(self, rvalue):
         """生成条件sql的右值部分，主要是为了处理时间和字符串引号"""
         if self.field_type == str:
-            return repr(rvalue)
+            return "'" + str(rvalue) + "'"
         elif self.field_type == datetime:
             return repr(rvalue.strftime("%Y-%m-%d %H:%M:%S"))
         else:
@@ -113,4 +155,11 @@ class CFCondition(object):
         else:
             return self.op % (self.lvalue.field_name, self.lvalue.gen_rvalue(self.rvalue))
 
+    def __and__(self, rvalue):
+        """cond & cond"""
+        return CFCondition(CFCondition._and, self, rvalue)
+
+    def __or__(self, rvalue):
+        """cond | cond"""
+        return CFCondition(CFCondition._or, self, rvalue)
 
